@@ -1,0 +1,125 @@
+#include <ESP8266Firebase.h>
+#include <ESP8266WiFi.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_MQTT.h>
+#include <Adafruit_MQTT_Client.h>
+
+WiFiClient client;
+#define AIO_SERVER      "io.adafruit.com"
+#define AIO_SERVERPORT  1883                   // use 8883 for SSL
+
+#define AIO_USERNAME    "fisipb1"						//email : fisikaipb7@gmail.com
+#define AIO_KEY         "aio_SXHu62Kul1sDrYWQC4LrW0Iq1Mg1"			// Pass : G7fisika*
+
+Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
+Adafruit_MQTT_Subscribe lamp1 = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/lampu1");
+Adafruit_MQTT_Subscribe lamp2 = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/lampu2");
+Adafruit_MQTT_Subscribe lamp3 = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/lampu3");
+
+void MQTT_connect() {
+  int8_t ret;
+
+  // Stop if already connected.
+  if (mqtt.connected()) {
+    return;
+  }
+
+  Serial.print("Connecting to MQTT... ");
+
+  uint8_t retries = 3;
+  while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
+       Serial.println(mqtt.connectErrorString(ret));
+       Serial.println("Retrying MQTT connection in 5 seconds...");
+       mqtt.disconnect();
+       delay(5000);  // wait 5 seconds
+       retries--;
+       if (retries == 0) {
+         // basically die and wait for WDT to reset me
+         while (1);
+       }
+  }
+  Serial.println("MQTT Connected!");
+}
+
+
+const char* ssid = "vivo 1811";				// Nama Hotspot
+const char* password = "aufarafa";			// Pass Hotspot
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(D6,OUTPUT);
+  pinMode(D5,OUTPUT);
+  pinMode(D4,OUTPUT);
+
+  // Serial.println();
+  Serial.println();
+  Serial.print("Connecting to: ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print("-");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi Connected");
+
+  mqtt.subscribe(&lamp1);
+  mqtt.subscribe(&lamp2);
+  mqtt.subscribe(&lamp3);
+}
+
+uint32_t x=0;
+
+void loop() {
+  
+
+  MQTT_connect();
+
+  Adafruit_MQTT_Subscribe *subscription;
+  while ((subscription = mqtt.readSubscription(10000))) {
+    if (subscription == &lamp1) {
+     
+
+      String lampu1 = ((char *)lamp1.lastread);
+      if (lampu1 == "ON"){
+        digitalWrite(D6,HIGH);
+        digitalWrite(D5,HIGH);
+        digitalWrite(D4,HIGH);
+        Serial.print(F("Kondisi Lampu1: "));
+        Serial.println((char *)lamp1.lastread);
+      }
+      else if(lampu1 == "OFF"){
+        digitalWrite(D6,LOW);
+        digitalWrite(D5,LOW);
+        digitalWrite(D4,LOW);
+         Serial.print(F("Kondisi Lampu1: "));
+        Serial.println((char *)lamp1.lastread);
+      }
+    }
+
+    // if (subscription == &lamp2) {
+    //   Serial.print(F("Kondisi Lampu2: "));
+    //   Serial.println((char *)lamp2.lastread);
+    //   if (((char *)lamp1.lastread) == "ON"){
+    //     digitalWrite(D5,HIGH);
+    //   }
+    //   else if (((char *)lamp1.lastread) == "OFF")
+    //     digitalWrite(D5,LOW);
+    //   }
+    // }
+    // if (subscription == &lamp3) {
+    //   Serial.print(F("Kondisi Lampu3: "));
+    //   Serial.println((char *)lamp3.lastread);
+
+    //   if (((char *)lamp1.lastread) == "ON"){
+    //     digitalWrite(D4,HIGH);
+    //   }
+    //   else if if(((char *)lamp1.lastread) == "OFF"){
+    //     digitalWrite(D4,LOW);
+    //   }
+    // }
+  }
+}
+ 

@@ -1,0 +1,92 @@
+#include <ESP8266Firebase.h>
+#include <ESP8266WiFi.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+
+WiFiClient client;
+#define AIO_SERVER      "io.adafruit.com"
+#define AIO_SERVERPORT  1883                   // use 8883 for SSL
+
+#define AIO_USERNAME    "fisipb1"
+#define AIO_KEY         "aio_SXHu62Kul1sDrYWQC4LrW0Iq1Mg1"
+
+#define DHTPIN D7
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// WIFI
+const char* ssid = "vivo 1811";
+const char* password = "aufarafa";
+
+#define REFERENCE_URL "https://minimalprojek-default-rtdb.asia-southeast1.firebasedatabase.app/"  // Your Firebase project reference url
+
+Firebase firebase(REFERENCE_URL);
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(D6,OUTPUT);
+  pinMode(D5,OUTPUT);
+  pinMode(D4,OUTPUT);
+  dht.begin();
+
+  // Serial.println();
+  Serial.println();
+  Serial.print("Connecting to: ");
+  Serial.println(ssid);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print("-");
+  }
+  Serial.println("");
+  Serial.println("WiFi Connected");
+}
+
+void loop() {
+
+  float t = dht.readTemperature();
+  float h = dht.readHumidity();
+  // Serial.print(t);
+  // Serial.print(" ");
+  // Serial.println(h);
+
+  firebase.setFloat("data/Suhu", t);
+  firebase.setFloat("data/Humidity",h);
+
+  String lampu1 = firebase.getString("data/Lampu1");
+  if(lampu1 == "true"){
+    // Serial.print("Kondisi Lampu1:\t");
+    // Serial.println("HIGH");
+    digitalWrite(D6,HIGH);
+  }
+  else if(lampu1 == "false"){
+    // Serial.print("Kondisi Lampu1:\t");
+    // Serial.println("LOW");
+    digitalWrite(D6,LOW);
+  }
+
+  String lampu2 = firebase.getString("data/Lampu2");
+  if(lampu2 == "true"){
+    // Serial.print("Kondisi Lampu2:\t");
+    // Serial.println("HIGH");
+    digitalWrite(D5,HIGH);
+  }
+  else if(lampu2 == "false"){
+    // Serial.print("Kondisi Lampu2:\t");
+    // Serial.println("LOW");
+    digitalWrite(D5,LOW);
+  }
+  String lampu3 = firebase.getString("data/Lampu3");
+  if(lampu3 == "true"){
+    // Serial.print("Kondisi Lampu3:\t");
+    // Serial.println("HIGH");
+    digitalWrite(D4,HIGH);
+  }
+  else if(lampu3 == "false"){
+    // Serial.print("Kondisi Lampu3:\t");
+    // Serial.println("LOW");
+    digitalWrite(D4,LOW);
+  }
+}
+ 
